@@ -238,6 +238,10 @@ public class PhysicalPort {
 
         @Override
         public void run() {
+            if (p == null || p.mainblock == null) {
+                return;
+            }
+
             // is this main block even a valid block?!
             for (BlockFace face : FaceUtil.ATTACHEDFACES) {
                 Block b = p.mainblock.getRelative(face);
