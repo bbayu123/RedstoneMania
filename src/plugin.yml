@@ -1,7 +1,9 @@
-name: Redstone Mania
+name: Redstone_Mania
 main: com.bergerkiller.bukkit.rm.RedstoneMania
-version: 1.05
+version: 1.06
+api-version: 1.13
 author: bergerkiller
+authors: [bbayu123]
 depend: [BKCommonLib]
 description: Plugin to virtualize redstone
 commands:
