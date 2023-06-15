@@ -250,11 +250,6 @@ public class Redstone {
         return null;
     }
 
-    public final void connect(Redstone redstone) {
-        connectTo(redstone);
-        redstone.connectTo(this);
-    }
-
     public final void connectTo(Redstone redstone) {
         if (redstone == this) return;
         outputs.add(redstone);

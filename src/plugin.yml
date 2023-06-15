@@ -1,6 +1,6 @@
 name: Redstone_Mania
 main: com.bergerkiller.bukkit.rm.RedstoneMania
-version: 1.06
+version: 2.0-SNAPSHOT
 api-version: 1.13
 author: bergerkiller
 authors: [bbayu123]

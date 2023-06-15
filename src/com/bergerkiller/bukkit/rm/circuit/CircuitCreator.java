@@ -213,7 +213,9 @@ public class CircuitCreator {
                 if (face == BlockFace.DOWN) {
                     redstone.connectTo(create(b).value);
                 } else {
-                    create(b).value.connect(redstone);
+                    Redstone other = create(b).value;
+                    redstone.connectTo(other);
+                    other.connectTo(redstone);
                 }
             } else if (MaterialUtil.ISREDSTONETORCH.get(btype)) {
                 create(b).value.connectTo(redstone);
