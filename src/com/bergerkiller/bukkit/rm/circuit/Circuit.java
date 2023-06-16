@@ -24,61 +24,85 @@ public class Circuit extends CircuitBase {
 
     @Override
     public File getFile() {
-        return CircuitProvider.getCircuitFile(name);
+        return CircuitProvider.getCircuitFile(this.name);
     }
 
     public File getInstanceFolder() {
-        File file = new File(CircuitProvider.getInstancesFolder() + File.separator + name);
+        File file = new File(CircuitProvider.getInstancesFolder() + File.separator + this.name);
         file.mkdirs();
         return file;
     }
 
     public CircuitInstance getInstance(String name) {
-        return instances.get(name);
+        return this.instances.get(name);
     }
 
     public Collection<CircuitInstance> getInstances() {
-        return instances.values();
+        return this.instances.values();
     }
 
+    /**
+     * Creates an instance of this circuit
+     * 
+     * @param main whether this is the main (first) instance created
+     * @return an instance of this circuit
+     */
     private CircuitInstance createInstance(boolean main) {
         CircuitInstance c = new CircuitInstance(this, "");
         // Set dependencies
-        c.subcircuits = new CircuitInstance[subcircuits.length];
+        c.subcircuits = new CircuitInstance[this.subcircuits.length];
         for (int i = 0; i < c.subcircuits.length; i++) {
-            c.subcircuits[i] = subcircuits[i].source.createInstance();
+            c.subcircuits[i] = this.subcircuits[i].source.createInstance();
         }
         // Clone the data
-        c.elements = new Component[elements.length];
-        for (int i = 0; i < elements.length; i++) {
-            c.elements[i] = elements[i].clone();
+        c.elements = new Component[this.elements.length];
+        for (int i = 0; i < this.elements.length; i++) {
+            c.elements[i] = this.elements[i].clone();
         }
         // Perform some ID generation to match the element ID's
         c.initialize();
         // Link the elements
         for (int i = 0; i < c.elements.length; i++) {
-            Component from = elements[i];
+            Component from = this.elements[i];
             Component to = c.elements[i];
             if (from.getId() != to.getId()) {
-                RedstoneMania.plugin.log(Level.SEVERE, "Failed to make a new instance of '" + name + "': ID out of sync!");
+                RedstoneMania.plugin.log(Level.SEVERE, "Failed to make a new instance of '" + this.name + "': ID out of sync!");
                 return null;
             } else {
-                for (Component input : from.inputs) {
+                for (Component input : from.mainInputs) {
                     Component element = c.getElement(input);
                     if (element == null) {
-                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + name + "': input element ID mismatch!");
+                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + this.name + "': main input element ID mismatch!");
                         return null;
                     } else {
                         element.connectTo(to);
                     }
                 }
-                for (Component output : from.outputs) {
+                for (Component input : from.sideInputs) {
+                    Component element = c.getElement(input);
+                    if (element == null) {
+                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + this.name + "': side input element ID mismatch!");
+                        return null;
+                    } else {
+                        element.connectToSide(to);
+                    }
+                }
+                for (Component output : from.mainOutputs) {
                     Component element = c.getElement(output);
                     if (element == null) {
-                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + name + "': output element ID mismatch!");
+                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + this.name + "': output element ID mismatch!");
                         return null;
                     } else {
                         to.connectTo(element);
+                    }
+                }
+                for (Component output : from.sideOutputs) {
+                    Component element = c.getElement(output);
+                    if (element == null) {
+                        RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + this.name + "': output element ID mismatch!");
+                        return null;
+                    } else {
+                        to.connectToSide(element);
                     }
                 }
             }
@@ -95,7 +119,7 @@ public class Circuit extends CircuitBase {
             nameBuilder.setLength(0);
             nameBuilder.append(i);
             newName = nameBuilder.toString();
-            if (!instances.containsKey(newName)) {
+            if (!this.instances.containsKey(newName)) {
                 break;
             }
         }
@@ -107,17 +131,17 @@ public class Circuit extends CircuitBase {
     }
 
     public CircuitInstance createInstance(String name) {
-        CircuitInstance c = getInstance(name);
+        CircuitInstance c = this.getInstance(name);
         if (c == null) {
             c = this.createInstance(true);
             c.name = name;
-            instances.put(name, c);
+            this.instances.put(name, c);
         }
         return c;
     }
 
     public CircuitInstance removeInstance(String name) {
-        CircuitInstance ci = instances.remove(name);
+        CircuitInstance ci = this.instances.remove(name);
         if (ci != null) {
             for (Port p : ci.getPorts()) {
                 for (PhysicalPort pp : p.locations) {
@@ -133,24 +157,24 @@ public class Circuit extends CircuitBase {
     @Override
     public void load(DataInputStream dis) throws IOException {
         // Read the sub-circuit dependencies
-        subcircuits = new CircuitInstance[dis.readShort()];
-        for (int i = 0; i < subcircuits.length; i++) {
+        this.subcircuits = new CircuitInstance[dis.readShort()];
+        for (int i = 0; i < this.subcircuits.length; i++) {
             String cname = dis.readUTF();
             Circuit c = CircuitProvider.get(cname);
             if (c == null) {
                 throw new RuntimeException("Circuit dependency not found: " + cname);
             } else {
-                subcircuits[i] = c.createInstance();
+                this.subcircuits[i] = c.createInstance();
             }
         }
         // Read the circuit data
-        elements = new Component[dis.readShort()];
-        for (int i = 0; i < elements.length; i++) {
-            elements[i] = Component.loadFrom(dis);
+        this.elements = new Component[dis.readShort()];
+        for (int i = 0; i < this.elements.length; i++) {
+            this.elements[i] = Component.loadComponent(dis);
         }
-        initialize();
+        this.initialize();
         // Connect elements
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             int inputcount = dis.readShort();
             for (int i = 0; i < inputcount; i++) {
                 Component input = this.getElement(dis.readInt());
@@ -175,32 +199,32 @@ public class Circuit extends CircuitBase {
     @Override
     public void save(DataOutputStream dos) throws IOException {
         // Write circuit dependencies
-        dos.writeShort(subcircuits.length);
-        for (CircuitInstance c : subcircuits) {
+        dos.writeShort(this.subcircuits.length);
+        for (CircuitInstance c : this.subcircuits) {
             dos.writeUTF(c.source.name);
         }
         // Write the circuit data
-        dos.writeShort(elements.length);
-        for (Component r : elements) {
+        dos.writeShort(this.elements.length);
+        for (Component r : this.elements) {
             r.saveTo(dos);
         }
         // Write connections
-        for (Component r : elements) {
-            dos.writeShort(r.inputs.size());
-            for (Component input : r.inputs) {
+        for (Component r : this.elements) {
+            dos.writeShort(r.mainInputs.size());
+            for (Component input : r.mainInputs) {
                 dos.writeInt(input.getId());
             }
-            dos.writeShort(r.outputs.size());
-            for (Component output : r.outputs) {
+            dos.writeShort(r.mainOutputs.size());
+            for (Component output : r.mainOutputs) {
                 dos.writeInt(output.getId());
             }
         }
     }
 
     public String getNewInstanceName() {
-        int index = instances.size();
+        int index = this.instances.size();
         String name = String.valueOf(index);
-        while (getInstance(name) != null) {
+        while (this.getInstance(name) != null) {
             index++;
             name = String.valueOf(index);
         }

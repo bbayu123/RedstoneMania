@@ -11,12 +11,12 @@ package com.bergerkiller.bukkit.rm.element;
 public class Inverter extends Component {
 
     @Override
-    public boolean hasPower() {
-        return !isPowered();
+    public byte getType() {
+        return 1;
     }
 
     @Override
-    public byte getType() {
-        return 1;
+    protected boolean determinePower(boolean mainPowered, boolean sidePowered) {
+        return !mainPowered;
     }
 }

@@ -22,6 +22,44 @@ public class Port extends Component {
     private boolean leverpowered = false;
     public boolean ignoreNext = false; // prevents infinite loops because of levers
 
+    @Override
+    public byte getType() {
+        return 3;
+    }
+
+    @Override
+    protected boolean determinePower(boolean mainPowered, boolean sidePowered) {
+        return mainPowered;
+    }
+
+    @Override
+    public boolean hasPower() {
+        return this.leverpowered || super.hasPower();
+    }
+
+    @Override
+    public void onPowerChange() {
+        if (!this.ignoreNext) {
+            this.ignoreNext = true;
+            for (PhysicalPort p : this.locations) {
+                p.updateLevers();
+            }
+        }
+        super.onPowerChange();
+        this.ignoreNext = false;
+    }
+
+    public void onPowerChange(PhysicalPort ignore) {
+        if (ignore == null) {
+            this.onPowerChange();
+        } else {
+            for (PhysicalPort p : this.locations) {
+                if (p != ignore) p.updateLevers();
+            }
+            super.onPowerChange();
+        }
+    }
+
     /**
      * Updates the leverpowered state
      * 
@@ -32,20 +70,20 @@ public class Port extends Component {
     }
 
     public boolean updateLeverPower(PhysicalPort ignore) {
-        if (isPowered()) {
-            leverpowered = false;
+        if (this.isPowered()) {
+            this.leverpowered = false;
         } else {
-            if (leverpowered) {
-                for (PhysicalPort p : locations) {
+            if (this.leverpowered) {
+                for (PhysicalPort p : this.locations) {
                     if (p.isLeverPowered()) return false;
                 }
-                setLeverPowered(false);
+                this.setLeverPowered(false);
                 this.onPowerChange(ignore);
                 return true;
             } else {
-                for (PhysicalPort p : locations) {
+                for (PhysicalPort p : this.locations) {
                     if (p.isLeverPowered()) {
-                        setLeverPowered(true);
+                        this.setLeverPowered(true);
                         this.onPowerChange(ignore);
                         return true;
                     }
@@ -55,45 +93,12 @@ public class Port extends Component {
         return false;
     }
 
-    @Override
-    public boolean hasPower() {
-        return leverpowered || super.hasPower();
-    }
-
-    public void onPowerChange(PhysicalPort ignore) {
-        if (ignore == null) {
-            this.onPowerChange();
-        } else {
-            for (PhysicalPort p : locations) {
-                if (p != ignore) p.updateLevers();
-            }
-            super.onPowerChange();
-        }
-    }
-
-    @Override
-    public void onPowerChange() {
-        if (!ignoreNext) {
-            ignoreNext = true;
-            for (PhysicalPort p : locations) {
-                p.updateLevers();
-            }
-        }
-        super.onPowerChange();
-        ignoreNext = false;
-    }
-
     public boolean isLeverPowered() {
-        return leverpowered;
+        return this.leverpowered;
     }
 
     public void setLeverPowered(boolean powered) {
-        leverpowered = powered;
-    }
-
-    @Override
-    public byte getType() {
-        return 3;
+        this.leverpowered = powered;
     }
 
     public PhysicalPort addPhysical(Block at) {
@@ -117,8 +122,8 @@ public class Port extends Component {
     @Override
     public void saveInstance(DataOutputStream stream) throws IOException {
         super.saveInstance(stream);
-        stream.writeShort(locations.size());
-        for (PhysicalPort pp : locations) {
+        stream.writeShort(this.locations.size());
+        for (PhysicalPort pp : this.locations) {
             stream.writeUTF(pp.position.world);
             stream.writeInt(pp.position.x);
             stream.writeByte(pp.position.y);
@@ -127,4 +132,15 @@ public class Port extends Component {
         }
     }
 
+    @Override
+    public void saveTo(DataOutputStream stream) throws IOException {
+        super.saveTo(stream);
+        stream.writeUTF(this.name);
+    }
+
+    @Override
+    public void loadFrom(DataInputStream stream) throws IOException {
+        super.loadFrom(stream);
+        this.name = stream.readUTF();
+    }
 }

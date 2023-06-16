@@ -35,7 +35,7 @@ public class PlayerSelect {
      * @return Block delays
      */
     public BlockMap<Integer> getDelays() {
-        return delays;
+        return this.delays;
     }
 
     /**
@@ -44,26 +44,26 @@ public class PlayerSelect {
      * @param delay in ticks to set
      */
     public void setDelay(int delay) {
-        delays.put(selectedblock, delay);
+        this.delays.put(this.selectedblock, delay);
     }
 
     /**
      * Clears all the block delays set
      */
     public void clearDelays() {
-        delays.clear();
+        this.delays.clear();
     }
 
     public Map<String, BlockLocation> getPorts() {
-        return portnames;
+        return this.portnames;
     }
 
     public void setPort(String name) {
-        portnames.put(name, selectedblock);
+        this.portnames.put(name, this.selectedblock);
     }
 
     public void clearPorts() {
-        portnames.clear();
+        this.portnames.clear();
     }
 
     public void set(Location l) {
@@ -71,12 +71,12 @@ public class PlayerSelect {
     }
 
     public void set(Block b) {
-        selectedblock = new BlockLocation(b);
+        this.selectedblock = new BlockLocation(b);
     }
 
     public boolean setDelay() {
-        if (clickdelay >= 0 && isDelayable()) {
-            this.setDelay(clickdelay);
+        if (this.clickdelay >= 0 && this.isDelayable()) {
+            this.setDelay(this.clickdelay);
             return true;
         } else {
             return false;
@@ -84,14 +84,14 @@ public class PlayerSelect {
     }
 
     public Block getBlock() {
-        if (selectedblock == null) {
+        if (this.selectedblock == null) {
             return null;
         }
-        return selectedblock.getBlock();
+        return this.selectedblock.getBlock();
     }
 
     public Material getType() {
-        Block b = getBlock();
+        Block b = this.getBlock();
         if (b == null) {
             return Material.AIR;
         }
@@ -99,7 +99,7 @@ public class PlayerSelect {
     }
 
     public boolean isDelayable() {
-        Material type = getType();
+        Material type = this.getType();
         return MaterialUtil.ISDIODE.get(type) || MaterialUtil.ISREDSTONETORCH.get(type);
     }
 }

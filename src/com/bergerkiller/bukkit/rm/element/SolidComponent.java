@@ -23,7 +23,7 @@ public class SolidComponent extends Wire {
     public ArrayList<Block> outputs = new ArrayList<>();
 
     public boolean hasInput(Block block) {
-        for (Block b : inputs) {
+        for (Block b : this.inputs) {
             if (BlockUtil.equals(b, block)) return true;
         }
         return false;
@@ -35,9 +35,9 @@ public class SolidComponent extends Wire {
         Block below = block.getRelative(BlockFace.DOWN);
         Material belowtype = below.getType();
         if (MaterialUtil.ISREDSTONETORCH.get(belowtype)) {
-            inputs.add(below);
+            this.inputs.add(below);
         } else if (belowtype == Material.REDSTONE_WIRE) {
-            outputs.add(below);
+            this.outputs.add(below);
         }
         // Check all sides and up for torches
         for (BlockFace face : FaceUtil.ATTACHEDFACES) {
@@ -46,18 +46,18 @@ public class SolidComponent extends Wire {
             if (MaterialUtil.ISREDSTONETORCH.get(type)) {
                 if (Util.isAttached(b, block)) {
                     // we found an attached torch
-                    outputs.add(b);
+                    this.outputs.add(b);
                 }
             } else if (type == Material.REDSTONE_WIRE) {
                 if (face == BlockFace.UP) {
                     // wire ontop - acts as input
-                    inputs.add(b);
-                    outputs.add(b);
+                    this.inputs.add(b);
+                    this.outputs.add(b);
                 } else {
                     // pointing towards the block or not?
-                    outputs.add(b);
+                    this.outputs.add(b);
                     if (!isDistracted(b, face)) {
-                        inputs.add(b);
+                        this.inputs.add(b);
                     }
                 }
             } else if (MaterialUtil.ISDIODE.get(type)) {
@@ -65,10 +65,10 @@ public class SolidComponent extends Wire {
                 // supplying or receiving, or none?
                 if (facing == face) {
                     // receiving
-                    outputs.add(b);
+                    this.outputs.add(b);
                 } else if (facing.getOppositeFace() == face) {
                     // supplying
-                    inputs.add(b);
+                    this.inputs.add(b);
                 }
             }
         }

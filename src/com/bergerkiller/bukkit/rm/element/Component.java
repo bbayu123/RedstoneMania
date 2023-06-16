@@ -23,7 +23,7 @@ public abstract class Component {
     /**
      * The current power state
      */
-    private boolean powered = false;
+    protected boolean powered = false;
     /**
      * The ID of the redstone component
      */
@@ -38,13 +38,21 @@ public abstract class Component {
     private CircuitBase circuit;
 
     /**
-     * A set of components that provide input to this component
+     * A set of components that provide main input to this component
      */
-    public Set<Component> inputs = new HashSet<>();
+    public Set<Component> mainInputs = new HashSet<>();
     /**
-     * A set of components that this component outputs to
+     * A set of components that provide side input to this component
      */
-    public Set<Component> outputs = new HashSet<>();
+    public Set<Component> sideInputs = new HashSet<>();
+    /**
+     * A set of components that this component outputs to the main input
+     */
+    public Set<Component> mainOutputs = new HashSet<>();
+    /**
+     * A set of components that this component outputs to the side input
+     */
+    public Set<Component> sideOutputs = new HashSet<>();
     /**
      * The maximum allowed updates per tick
      */
@@ -59,28 +67,36 @@ public abstract class Component {
      */
     private int setdelay = 0;
     /**
-     * The power state to set after the current delay
+     * The main power state to set after the current delay
      */
-    private boolean setpowered = false;
+    private boolean setMainPowered = false;
     /**
-     * Whether there currently is power from the inputs
+     * The side power state to set after the current delay
      */
-    private boolean inputpower = false;
+    private boolean setSidePowered = false;
+    /**
+     * Whether there currently is power from the main inputs
+     */
+    private boolean mainInputPower = false;
+    /**
+     * Whether there currently is power from the side inputs
+     */
+    private boolean sideInputPower = false;
     /**
      * The current counter for the burnout
      */
-    private int burnoutCounter = burnoutValue;
+    private int burnoutCounter = this.burnoutValue;
 
     /**
      * Called every tick to update the state of this component
      */
     public void onTick() {
-        if (setdelay > 0) {
-            if (--setdelay == 0) {
-                this.setPowered(setpowered, false);
+        if (this.setdelay > 0) {
+            if (--this.setdelay == 0) {
+                this.setPowered(this.setMainPowered, this.setSidePowered, false);
             }
         }
-        burnoutCounter = burnoutValue;
+        this.burnoutCounter = this.burnoutValue;
     }
 
     /**
@@ -90,36 +106,44 @@ public abstract class Component {
      */
     public final boolean update() {
         // we don't have to update inactive elements!
-        if (isDisabled()) {
-            if (getType() != 3) {
+        if (this.isDisabled()) {
+            if (this.getType() != 3) {
                 return false;
             }
         }
         // check if the opposite is the new result
-        boolean hasinput = false;
-        for (Component input : inputs) {
+        boolean hasmaininput = false;
+        for (Component input : this.mainInputs) {
             if (input.hasPower()) {
-                hasinput = true;
+                hasmaininput = true;
                 break;
             }
         }
-        if (inputpower && !hasinput) {
-            inputpower = false;
-            this.setPowered(false, true);
-        } else if (!inputpower && hasinput) {
-            inputpower = true;
-            this.setPowered(true, true);
+        boolean hassideinput = false;
+        for (Component input : this.sideInputs) {
+            if (input.hasPower()) {
+                hassideinput = true;
+                break;
+            }
+        }
+        if ((this.mainInputPower ^ hasmaininput) || (this.sideInputPower ^ hassideinput)) {
+            this.mainInputPower = hasmaininput;
+            this.sideInputPower = hassideinput;
+            this.setPowered(hasmaininput, hassideinput, true);
+            return true;
         } else {
             return false;
         }
-        return true;
     }
 
     /**
      * Called when the power state has changed
      */
     public void onPowerChange() {
-        for (Component output : outputs) {
+        for (Component output : this.mainOutputs) {
+            output.update();
+        }
+        for (Component output : this.sideOutputs) {
             output.update();
         }
     }
@@ -130,9 +154,9 @@ public abstract class Component {
      * @return the output component that is found, or null if none is found
      */
     public final Component findDirectConnection() {
-        if (getDelay() == 0 && inputs.size() > 0 && outputs.size() > 0) {
-            for (Component input : inputs) {
-                if (input.getDelay() == 0 && outputs.contains(input)) {
+        if (this.getDelay() == 0 && this.mainInputs.size() > 0 && this.mainOutputs.size() > 0 && this.sideOutputs.size() > 0) {
+            for (Component input : this.mainInputs) {
+                if (input.getDelay() == 0 && this.mainOutputs.contains(input)) {
                     return input;
                 }
             }
@@ -146,33 +170,60 @@ public abstract class Component {
      * @param to the component to transfer to
      */
     public final void transfer(Component to) {
-        for (Component input : inputs) {
-            input.outputs.remove(this);
+        for (Component input : this.mainInputs) {
+            input.mainOutputs.remove(this);
             if (to != input) {
-                input.outputs.add(to);
-                to.inputs.add(input);
+                input.mainOutputs.add(to);
+                to.mainInputs.add(input);
             }
         }
-        for (Component output : outputs) {
-            output.inputs.remove(this);
+        for (Component input : this.sideInputs) {
+            input.sideOutputs.remove(this);
+            if (to != input) {
+                input.sideOutputs.add(to);
+                to.sideInputs.add(input);
+            }
+        }
+        for (Component output : this.mainOutputs) {
+            output.mainInputs.remove(this);
             if (to != output) {
-                output.inputs.add(to);
-                to.outputs.add(output);
+                output.mainInputs.add(to);
+                to.mainOutputs.add(output);
             }
         }
-        inputs.clear();
-        outputs.clear();
+        for (Component output : this.sideOutputs) {
+            output.sideInputs.remove(this);
+            if (to != output) {
+                output.sideInputs.add(to);
+                to.sideOutputs.add(output);
+            }
+        }
+        this.mainInputs.clear();
+        this.sideInputs.clear();
+        this.mainOutputs.clear();
+        this.sideOutputs.clear();
     }
 
     /**
-     * Connect this component's output to another component's input
+     * Connect this component's output to another component's main input
      * 
      * @param redstone the component to connect to
      */
     public final void connectTo(Component redstone) {
         if (redstone == this) return;
-        outputs.add(redstone);
-        redstone.inputs.add(this);
+        this.mainOutputs.add(redstone);
+        redstone.mainInputs.add(this);
+    }
+
+    /**
+     * Connect this component's output to another component's side input
+     * 
+     * @param redstone the component to connect to
+     */
+    public final void connectToSide(Component redstone) {
+        if (redstone == this) return;
+        this.sideOutputs.add(redstone);
+        redstone.sideInputs.add(this);
     }
 
     /**
@@ -181,10 +232,8 @@ public abstract class Component {
      * @param redstone the component to disconnect from
      */
     public final void disconnect(Component redstone) {
-        inputs.remove(redstone);
-        outputs.remove(redstone);
-        redstone.inputs.remove(this);
-        redstone.outputs.remove(this);
+        this.disconnectFrom(redstone);
+        redstone.disconnectFrom(this);
     }
 
     /**
@@ -194,22 +243,32 @@ public abstract class Component {
      */
     public final void disconnectFrom(Component redstone) {
         if (redstone == this) return;
-        outputs.remove(redstone);
-        redstone.inputs.remove(this);
+        this.mainOutputs.remove(redstone);
+        this.sideOutputs.remove(redstone);
+        redstone.mainInputs.remove(this);
+        redstone.sideInputs.remove(this);
     }
 
     /**
      * Disconnect all connected components
      */
     public final void disconnectAll() {
-        for (Component r : inputs) {
-            r.outputs.remove(this);
+        for (Component r : this.mainInputs) {
+            r.mainOutputs.remove(this);
         }
-        for (Component r : outputs) {
-            r.inputs.remove(this);
+        for (Component r : this.sideInputs) {
+            r.sideOutputs.remove(this);
         }
-        inputs.clear();
-        outputs.clear();
+        for (Component r : this.mainOutputs) {
+            r.mainInputs.remove(this);
+        }
+        for (Component r : this.sideOutputs) {
+            r.sideInputs.remove(this);
+        }
+        this.mainInputs.clear();
+        this.sideInputs.clear();
+        this.mainOutputs.clear();
+        this.sideOutputs.clear();
     }
 
     /**
@@ -219,7 +278,7 @@ public abstract class Component {
      * @return if this component is connected to the given component
      */
     public final boolean isConnectedTo(Component redstone) {
-        return outputs.contains(redstone);
+        return this.mainOutputs.contains(redstone) || this.sideOutputs.contains(redstone);
     }
 
     /**
@@ -229,7 +288,7 @@ public abstract class Component {
      * @return if this component is connected with the given component
      */
     public final boolean isConnected(Component redstone) {
-        return isConnectedTo(redstone) && redstone.isConnectedTo(this);
+        return this.isConnectedTo(redstone) && redstone.isConnectedTo(this);
     }
 
     /**
@@ -237,20 +296,34 @@ public abstract class Component {
      * and outputs are cleared
      */
     public final void disable() {
-        for (Component input : inputs) {
-            input.outputs.remove(this);
-            for (Component output : outputs) {
+        for (Component input : this.mainInputs) {
+            input.mainOutputs.remove(this);
+            for (Component output : this.mainOutputs) {
                 input.connectTo(output);
             }
         }
-        for (Component output : outputs) {
-            output.inputs.remove(this);
-            for (Component input : inputs) {
+        for (Component input : this.sideInputs) {
+            input.sideOutputs.remove(this);
+            for (Component output : this.sideOutputs) {
+                input.connectToSide(output);
+            }
+        }
+        for (Component output : this.mainOutputs) {
+            output.mainInputs.remove(this);
+            for (Component input : this.mainInputs) {
                 input.connectTo(output);
             }
         }
-        inputs.clear();
-        outputs.clear();
+        for (Component output : this.sideOutputs) {
+            output.sideInputs.remove(this);
+            for (Component input : this.sideInputs) {
+                input.connectToSide(output);
+            }
+        }
+        this.mainInputs.clear();
+        this.sideInputs.clear();
+        this.mainOutputs.clear();
+        this.sideOutputs.clear();
     }
 
     /**
@@ -259,7 +332,7 @@ public abstract class Component {
      * @return if this component is disabled
      */
     public final boolean isDisabled() {
-        return inputs.size() == 0 && outputs.size() == 0;
+        return this.mainInputs.size() == 0 && this.sideInputs.size() == 0 && this.mainOutputs.size() == 0 && this.sideOutputs.size() == 0;
     }
 
     /**
@@ -268,7 +341,7 @@ public abstract class Component {
      * @return if the component is powered
      */
     public final boolean isPowered() {
-        return powered;
+        return this.mainInputPower || this.sideInputPower;
     }
 
     /**
@@ -276,40 +349,47 @@ public abstract class Component {
      * 
      * @param powered the power state of this component
      */
-    public final void setPowered(boolean powered) {
-        this.powered = powered;
-        inputpower = powered;
+    public final void setPowered(boolean mainPowered, boolean sidePowered) {
+        this.powered = mainPowered;
+        this.mainInputPower = mainPowered;
+        this.sideInputPower = sidePowered;
     }
 
     /**
      * Sets the power state of this component
      * 
-     * @param powered  the power state of this component
-     * @param usedelay whether to use delay or not
+     * @param mainPowered the main power state of this component
+     * @param sidePowered the side power state of this component
+     * @param usedelay    whether to use delay or not
      */
-    private void setPowered(boolean powered, boolean usedelay) {
-        int delay = getDelay();
+    private void setPowered(boolean mainPowered, boolean sidePowered, boolean usedelay) {
+        int delay = this.getDelay();
         if (usedelay && delay > 0) {
-            if (setdelay == 0) {
-                setpowered = powered;
-                setdelay = delay;
+            if (this.setdelay == 0) {
+                this.setMainPowered = mainPowered;
+                this.setSidePowered = sidePowered;
+                this.setdelay = delay;
             }
-        } else if (burnoutCounter > 0) {
-            --burnoutCounter;
-            if (powered) {
-                if (!this.powered) {
-                    this.powered = true;
-                    onPowerChange();
-                }
-                if (!inputpower) {
-                    this.setPowered(false, true);
-                }
-            } else if (!inputpower && this.powered) {
-                this.powered = false;
-                onPowerChange();
+            return;
+        }
+
+        if (this.burnoutCounter > 0) {
+            --this.burnoutCounter;
+
+            // If no main input power
+            boolean shouldPower = this.determinePower(mainPowered, sidePowered);
+            if (shouldPower ^ this.powered) {
+                this.powered = shouldPower;
+                this.onPowerChange();
+            }
+
+            if ((this.mainInputPower ^ mainPowered) || (this.sideInputPower ^ sidePowered)) {
+                this.setPowered(this.mainInputPower, this.sideInputPower, usedelay);
             }
         }
     }
+
+    protected abstract boolean determinePower(boolean mainPowered, boolean sidePowered);
 
     /**
      * Gets if the component is powering outputs or not
@@ -317,7 +397,7 @@ public abstract class Component {
      * @return if the component has power for output
      */
     public boolean hasPower() {
-        return isPowered();
+        return this.powered;
     }
 
     /**
@@ -326,7 +406,7 @@ public abstract class Component {
      * @return the ID of this component
      */
     public final int getId() {
-        return id;
+        return this.id;
     }
 
     /**
@@ -344,7 +424,7 @@ public abstract class Component {
      * @return the delay on this component
      */
     public int getDelay() {
-        return delay;
+        return this.delay;
     }
 
     /**
@@ -362,7 +442,7 @@ public abstract class Component {
      * @return the circuit that this component belongs to
      */
     public CircuitBase getCircuit() {
-        return circuit;
+        return this.circuit;
     }
 
     /**
@@ -380,7 +460,7 @@ public abstract class Component {
      * @return the x-coordinate of this component
      */
     public final short getX() {
-        return x;
+        return this.x;
     }
 
     /**
@@ -389,7 +469,7 @@ public abstract class Component {
      * @return the z-coordinate of this component
      */
     public final short getZ() {
-        return z;
+        return this.z;
     }
 
     /**
@@ -427,7 +507,7 @@ public abstract class Component {
      */
     public final boolean isType(int... types) {
         for (int type : types) {
-            if (getType() == type) return true;
+            if (this.getType() == type) return true;
         }
         return false;
     }
@@ -438,11 +518,11 @@ public abstract class Component {
      * @param source the component to copy data from
      */
     public void setData(Component source) {
-        id = source.id;
-        delay = source.delay;
-        powered = source.powered;
-        setdelay = source.setdelay;
-        setpowered = source.setpowered;
+        this.id = source.id;
+        this.delay = source.delay;
+        this.powered = source.powered;
+        this.setdelay = source.setdelay;
+        this.setMainPowered = source.setMainPowered;
     }
 
     /**
@@ -452,11 +532,11 @@ public abstract class Component {
      * @throws IOException if there is a problem reading from the data stream
      */
     public void loadInstance(DataInputStream stream) throws IOException {
-        powered = stream.readBoolean();
-        if (delay > 0) {
-            setdelay = stream.readInt();
-            if (setdelay > 0) {
-                setpowered = stream.readBoolean();
+        this.powered = stream.readBoolean();
+        if (this.delay > 0) {
+            this.setdelay = stream.readInt();
+            if (this.setdelay > 0) {
+                this.setMainPowered = stream.readBoolean();
             }
         }
     }
@@ -468,11 +548,11 @@ public abstract class Component {
      * @throws IOException if there is a problem writing to the data stream
      */
     public void saveInstance(DataOutputStream stream) throws IOException {
-        stream.writeBoolean(powered);
-        if (delay > 0) {
-            stream.writeInt(setdelay);
-            if (setdelay > 0) {
-                stream.writeBoolean(setpowered);
+        stream.writeBoolean(this.powered);
+        if (this.delay > 0) {
+            stream.writeInt(this.setdelay);
+            if (this.setdelay > 0) {
+                stream.writeBoolean(this.setMainPowered);
             }
         }
     }
@@ -484,15 +564,28 @@ public abstract class Component {
      * @throws IOException if there is a problem writing to the data stream
      */
     public void saveTo(DataOutputStream stream) throws IOException {
-        stream.write(getType());
+        stream.write(this.getType());
         // init
-        stream.writeShort(x);
-        stream.writeShort(z);
-        stream.writeBoolean(powered);
-        stream.writeInt(delay);
+        stream.writeShort(this.x);
+        stream.writeShort(this.z);
+        stream.writeBoolean(this.powered);
+        stream.writeInt(this.delay);
         if (this instanceof Port) {
             stream.writeUTF(((Port) this).name);
         }
+    }
+
+    /**
+     * Loads this component's details from a data stream
+     * 
+     * @param stream the data stream to read from
+     * @throws IOException if there is a problem reading from the data stream
+     */
+    public void loadFrom(DataInputStream stream) throws IOException {
+        this.x = stream.readShort();
+        this.z = stream.readShort();
+        this.powered = stream.readBoolean();
+        this.delay = stream.readInt();
     }
 
     /**
@@ -502,7 +595,7 @@ public abstract class Component {
      * @return the component that was loaded
      * @throws IOException if there is a problem reading from the data stream
      */
-    public static Component loadFrom(DataInputStream stream) throws IOException {
+    public static Component loadComponent(DataInputStream stream) throws IOException {
         byte type = stream.readByte();
         Component rval;
         if (type == 0) {
@@ -518,13 +611,7 @@ public abstract class Component {
             RedstoneMania.plugin.log(Level.SEVERE, "Unknown redstone type: " + type);
         }
         // init
-        rval.x = stream.readShort();
-        rval.z = stream.readShort();
-        rval.powered = stream.readBoolean();
-        rval.delay = stream.readInt();
-        if (rval instanceof Port) {
-            ((Port) rval).name = stream.readUTF();
-        }
+        rval.loadFrom(stream);
         return rval;
     }
 
@@ -548,13 +635,13 @@ public abstract class Component {
     @Override
     public String toString() {
         if (this instanceof Inverter) {
-            return "[Inverter " + id + "]";
+            return "[Inverter " + this.id + "]";
         } else if (this instanceof Repeater) {
-            return "[Repeater " + id + "]";
+            return "[Repeater " + this.id + "]";
         } else if (this instanceof Port) {
-            return "[Port '" + ((Port) this).name + "' " + id + "]";
+            return "[Port '" + ((Port) this).name + "' " + this.id + "]";
         } else {
-            return "[Wire " + id + "]";
+            return "[Wire " + this.id + "]";
         }
     }
 

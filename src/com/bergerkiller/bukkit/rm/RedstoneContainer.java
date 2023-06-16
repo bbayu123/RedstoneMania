@@ -18,7 +18,7 @@ public class RedstoneContainer {
      */
     public <T extends Component> T setValue(T value) {
         this.value = value;
-        map.setValue(this, value);
+        this.map.setValue(this, value);
         return value;
     }
 }

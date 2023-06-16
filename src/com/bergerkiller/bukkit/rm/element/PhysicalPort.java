@@ -88,10 +88,10 @@ public class PhysicalPort {
 
     public PhysicalPort(Port port, BlockLocation at) {
         this.port = port;
-        position = at;
-        ports.put(position, this);
+        this.position = at;
+        ports.put(this.position, this);
         this.port.locations.add(this);
-        updateLoaded();
+        this.updateLoaded();
         this.updateLevers(false);
     }
 
@@ -99,7 +99,7 @@ public class PhysicalPort {
      * Updates the loaded state
      */
     public void updateLoaded() {
-        setLoaded(position.isLoaded());
+        this.setLoaded(this.position.isLoaded());
     }
 
     /**
@@ -108,14 +108,14 @@ public class PhysicalPort {
      * @param active state to set to
      */
     public void setLoaded(boolean active) {
-        if ((mainblock != null) != active) {
+        if ((this.mainblock != null) != active) {
             if (active) {
-                mainblock = position.getBlock();
-                if (mainblock == null || mainblock.getWorld() == null) return;
+                this.mainblock = this.position.getBlock();
+                if (this.mainblock == null || this.mainblock.getWorld() == null) return;
                 this.updateLevers();
                 CommonUtil.nextTick(new ExistenceCheck(this));
             } else {
-                mainblock = null;
+                this.mainblock = null;
             }
         }
     }
@@ -125,9 +125,9 @@ public class PhysicalPort {
     }
 
     public void updateLeverPowered(boolean setport) {
-        if (mainblock == null) return;
+        if (this.mainblock == null) return;
         for (BlockFace face : FaceUtil.ATTACHEDFACES) {
-            Block lever = mainblock.getRelative(face);
+            Block lever = this.mainblock.getRelative(face);
             if (lever.getType() == Material.LEVER) {
                 BlockUtil.setLever(lever, false);
                 for (BlockFace leverside : FaceUtil.ATTACHEDFACESDOWN) {
@@ -136,9 +136,9 @@ public class PhysicalPort {
                     if (type == Material.REDSTONE_WIRE || type == Material.REDSTONE_TORCH || type == Material.REPEATER) {
                         if (side.isBlockIndirectlyPowered()) {
                             // this physical port is powered
-                            if (!leverpowered) {
-                                leverpowered = true;
-                                if (setport) port.updateLeverPower();
+                            if (!this.leverpowered) {
+                                this.leverpowered = true;
+                                if (setport) this.port.updateLeverPower();
                             }
                             return;
                         }
@@ -147,18 +147,18 @@ public class PhysicalPort {
             }
         }
         // this physical port is not powered
-        if (leverpowered) {
-            leverpowered = false;
+        if (this.leverpowered) {
+            this.leverpowered = false;
             if (setport) {
                 // we went from on to off - did any other ports get power in the meantime?
-                for (PhysicalPort p : port.locations) {
+                for (PhysicalPort p : this.port.locations) {
                     if (p != this) {
                         p.updateLeverPowered(false);
                     }
                 }
-                if (!port.updateLeverPower()) {
+                if (!this.port.updateLeverPower()) {
                     // update all levers
-                    for (PhysicalPort p : port.locations) {
+                    for (PhysicalPort p : this.port.locations) {
                         p.updateLevers();
                     }
                 }
@@ -172,7 +172,7 @@ public class PhysicalPort {
      * @return True if levers are powered, False if not
      */
     public boolean isLeverPowered() {
-        return leverpowered;
+        return this.leverpowered;
     }
 
     /**
@@ -181,14 +181,14 @@ public class PhysicalPort {
      * @param powered state to set to
      */
     public void setLeverPowered(boolean powered) {
-        leverpowered = powered;
+        this.leverpowered = powered;
     }
 
     /**
      * Updates the levers based on the power states of the inputs of this Physical Port
      */
     public void updateLevers() {
-        setLevers(port.hasPower() && !leverpowered);
+        this.setLevers(this.port.hasPower() && !this.leverpowered);
     }
 
     /**
@@ -197,8 +197,8 @@ public class PhysicalPort {
      * @param down state to set to
      */
     public void setLevers(boolean down) {
-        if (mainblock == null) return;
-        Util.setBlock(mainblock, down);
+        if (this.mainblock == null) return;
+        Util.setBlock(this.mainblock, down);
         if (!down) {
             // power change?
             this.updateLeverPowered();
@@ -214,17 +214,17 @@ public class PhysicalPort {
         }
 
         public Update(Block at) {
-            b = at;
+            this.b = at;
         }
 
         @Override
         public void run() {
-            if (pp == null) {
-                pp = get(b);
+            if (this.pp == null) {
+                this.pp = get(this.b);
             }
-            if (pp != null) {
-                pp.updateLeverPowered();
-                pp.updateLevers();
+            if (this.pp != null) {
+                this.pp.updateLeverPowered();
+                this.pp.updateLevers();
             }
         }
     }
@@ -233,21 +233,21 @@ public class PhysicalPort {
         private final PhysicalPort p;
 
         public ExistenceCheck(PhysicalPort port) {
-            p = port;
+            this.p = port;
         }
 
         @Override
         public void run() {
-            if (p == null || p.mainblock == null) {
+            if (this.p == null || this.p.mainblock == null) {
                 return;
             }
 
             // is this main block even a valid block?!
             for (BlockFace face : FaceUtil.ATTACHEDFACES) {
-                Block b = p.mainblock.getRelative(face);
+                Block b = this.p.mainblock.getRelative(face);
                 Material type = b.getType();
                 if (MaterialUtil.ISSIGN.get(type)) {
-                    if (Util.isAttached(b, p.mainblock)) {
+                    if (Util.isAttached(b, this.p.mainblock)) {
                         return;
                     }
                 }
@@ -255,10 +255,10 @@ public class PhysicalPort {
             // Not found - remove it
             StringBuilder builder = new StringBuilder();
             builder.append("Auto-removed physical port [");
-            builder.append(p.mainblock.getX() + "/" + p.mainblock.getY() + "/" + p.mainblock.getZ());
-            builder.append("] for port '" + p.port.name + "' in circuit instance '" + p.port.getCircuit().name);
+            builder.append(this.p.mainblock.getX() + "/" + this.p.mainblock.getY() + "/" + this.p.mainblock.getZ());
+            builder.append("] for port '" + this.p.port.name + "' in circuit instance '" + this.p.port.getCircuit().name);
             RedstoneMania.plugin.log(Level.WARNING, builder.toString());
-            remove(p.mainblock);
+            remove(this.p.mainblock);
         }
     }
 }

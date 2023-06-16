@@ -37,7 +37,7 @@ public class RedstoneMania extends PluginBase {
         CircuitProvider.loadAll();
 
         // Start scheduler
-        updatetask = new Task(this) {
+        this.updatetask = new Task(this) {
             @Override
             public void run() {
                 for (Circuit c : CircuitProvider.all()) {
@@ -56,7 +56,7 @@ public class RedstoneMania extends PluginBase {
 
     @Override
     public void disable() {
-        Task.stop(updatetask);
+        Task.stop(this.updatetask);
         for (Circuit c : CircuitProvider.all()) {
             for (CircuitInstance ci : c.getInstances()) {
                 ci.save();
@@ -190,16 +190,17 @@ public class RedstoneMania extends PluginBase {
             }
             builder.send(sender);
         } else if (cmdLabel.equals("reload")) {
-            disable();
+            this.disable();
             CircuitProvider.loadAll();
             sender.sendMessage(ChatColor.YELLOW + "All circuits have been reloaded!");
         } else if (cmdLabel.equals("save")) {
             if (args.length > 0) {
                 if (!sel.getPorts().isEmpty()) {
                     String name = Util.fixName(StringUtil.join(" ", args));
-                    File path = new File(getDataFolder() + File.separator + "circuits" + File.separator + name + ".circuit");
+                    File path = new File(this.getDataFolder() + File.separator + "circuits" + File.separator + name + ".circuit");
                     if (!path.exists()) {
-                        CircuitProvider.add(new CircuitCreator(player, sel).create(), name);
+                        Circuit circuit = new CircuitCreator(player, sel).create();
+                        CircuitProvider.add(circuit, name);
                         sender.sendMessage(ChatColor.GREEN + "You created circuit '" + name + "'!");
                     } else {
                         sender.sendMessage(ChatColor.RED + "A circuit with this name already exists!");

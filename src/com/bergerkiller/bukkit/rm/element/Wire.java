@@ -13,4 +13,9 @@ public class Wire extends Component {
     public byte getType() {
         return 0;
     }
+
+    @Override
+    protected boolean determinePower(boolean mainPowered, boolean sidePowered) {
+        return mainPowered;
+    }
 }

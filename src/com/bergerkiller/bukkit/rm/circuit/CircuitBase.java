@@ -5,8 +5,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.bergerkiller.bukkit.common.config.DataReader;
 import com.bergerkiller.bukkit.common.config.DataWriter;
@@ -54,10 +57,10 @@ public abstract class CircuitBase {
      * Ticks all the elements in this Circuit
      */
     public void onTick() {
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             r.onTick();
         }
-        for (CircuitInstance ci : subcircuits) {
+        for (CircuitInstance ci : this.subcircuits) {
             ci.onTick();
         }
     }
@@ -75,20 +78,20 @@ public abstract class CircuitBase {
      * @param generateIds whether to generate IDs or not
      */
     private void initialize(boolean generateIds) {
-        ports.clear();
-        for (Component r : elements) {
+        this.ports.clear();
+        for (Component r : this.elements) {
             r.setCircuit(this);
             if (r instanceof Port) {
-                ports.put(((Port) r).name, (Port) r);
+                this.ports.put(((Port) r).name, (Port) r);
             }
         }
-        for (CircuitBase c : subcircuits) {
+        for (CircuitBase c : this.subcircuits) {
             c.initialize(false);
         }
         if (generateIds) {
-            generateIds(0);
+            this.generateIds(0);
         }
-        initialized = true;
+        this.initialized = true;
     }
 
     /**
@@ -97,7 +100,7 @@ public abstract class CircuitBase {
      * @return if the circuit is initialised
      */
     public boolean isInitialized() {
-        return initialized;
+        return this.initialized;
     }
 
     /**
@@ -107,7 +110,7 @@ public abstract class CircuitBase {
      * @return
      */
     public Port getPort(String name) {
-        return ports.get(name);
+        return this.ports.get(name);
     }
 
     /**
@@ -116,7 +119,7 @@ public abstract class CircuitBase {
      * @return a collection of ports
      */
     public Collection<Port> getPorts() {
-        return ports.values();
+        return this.ports.values();
     }
 
     /**
@@ -137,7 +140,7 @@ public abstract class CircuitBase {
         boolean hasDirectConnections = true;
         while (hasDirectConnections) {
             hasDirectConnections = false;
-            for (Component r : elements) {
+            for (Component r : this.elements) {
                 Component direct = r.findDirectConnection();
                 if (direct == null) continue;
                 hasDirectConnections = true;
@@ -164,7 +167,7 @@ public abstract class CircuitBase {
             }
         }
         if (checksub) {
-            for (CircuitBase c : subcircuits) {
+            for (CircuitBase c : this.subcircuits) {
                 if (c.fixDirectConnections(false)) changed = true;
             }
         }
@@ -182,10 +185,10 @@ public abstract class CircuitBase {
      * @return the element
      */
     public Component getElement(int id) {
-        if (id < elements.length) {
-            return elements[id];
+        if (id < this.elements.length) {
+            return this.elements[id];
         } else {
-            for (CircuitBase sub : subcircuits) {
+            for (CircuitBase sub : this.subcircuits) {
                 for (Component r : sub.elements) {
                     if (r.getId() == id) return r;
                 }
@@ -210,8 +213,8 @@ public abstract class CircuitBase {
      * @param element the component to be removed
      */
     public void removeElement(Component element) {
-        for (int i = 0; i < elements.length; i++) {
-            if (elements[i] == element) {
+        for (int i = 0; i < this.elements.length; i++) {
+            if (this.elements[i] == element) {
                 this.removeElement(i);
                 return;
             }
@@ -224,14 +227,14 @@ public abstract class CircuitBase {
      * @param index the index to remove
      */
     private void removeElement(int index) {
-        Component[] newElements = new Component[elements.length - 1];
+        Component[] newElements = new Component[this.elements.length - 1];
         for (int i = 0; i < index; i++) {
-            newElements[i] = elements[i];
+            newElements[i] = this.elements[i];
         }
         for (int i = index; i < newElements.length; i++) {
-            newElements[i] = elements[i + 1];
+            newElements[i] = this.elements[i + 1];
         }
-        elements = newElements;
+        this.elements = newElements;
     }
 
     /**
@@ -255,7 +258,7 @@ public abstract class CircuitBase {
                 elements.add(r);
             }
         }
-        for (CircuitBase cb : subcircuits) {
+        for (CircuitBase cb : this.subcircuits) {
             for (Component r : cb.getIndependentElements()) {
                 elements.add(r);
             }
@@ -272,11 +275,11 @@ public abstract class CircuitBase {
     }
 
     private int generateIds(int startindex) {
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             r.setId(startindex);
             startindex++;
         }
-        for (CircuitBase cb : subcircuits) {
+        for (CircuitBase cb : this.subcircuits) {
             startindex = cb.generateIds(startindex);
         }
         return startindex;
@@ -285,43 +288,43 @@ public abstract class CircuitBase {
     public abstract File getFile();
 
     public String getFullName() {
-        return name;
+        return this.name;
     }
 
     public final boolean isSaved() {
-        return getFile().exists();
+        return this.getFile().exists();
     }
 
     public final boolean load() {
-        return this.load(getFile());
+        return this.load(this.getFile());
     }
 
     public final boolean save() {
-        return this.save(getFile());
+        return this.save(this.getFile());
     }
 
     public final boolean load(File file) {
-        loaded = false;
+        this.loaded = false;
         new DataReader(file) {
             @Override
             public void read(DataInputStream stream) throws IOException {
                 CircuitBase.this.load(stream);
-                loaded = true;
+                CircuitBase.this.loaded = true;
             }
         }.read();
-        return loaded;
+        return this.loaded;
     }
 
     public final boolean save(File file) {
-        saved = false;
+        this.saved = false;
         new DataWriter(file) {
             @Override
             public void write(DataOutputStream stream) throws IOException {
                 CircuitBase.this.save(stream);
-                saved = true;
+                CircuitBase.this.saved = true;
             }
         }.write();
-        return saved;
+        return this.saved;
     }
 
     /**
@@ -339,4 +342,29 @@ public abstract class CircuitBase {
      * @throws IOException
      */
     public abstract void save(DataOutputStream stream) throws IOException;
+
+    @Override
+    public String toString() {
+        return String.format("CircuitBase [name=%s, elements=%s, subcircuits=%s, ports=%s, initialized=%s, loaded=%s, saved=%s, links=%s]", name, Arrays.toString(elements),
+                Arrays.toString(subcircuits), ports, initialized, loaded, saved, showLinks());
+    }
+
+    private String showLinks() {
+        Set<String> set = new HashSet<>();
+        for (Component c1 : this.elements) {
+            for (Component c2 : c1.mainInputs) {
+                set.add(String.format("%s --> %s", c2, c1));
+            }
+            for (Component c2 : c1.sideInputs) {
+                set.add(String.format("%s --| %s", c2, c1));
+            }
+            for (Component c2 : c1.mainOutputs) {
+                set.add(String.format("%s --> %s", c1, c2));
+            }
+            for (Component c2 : c1.sideOutputs) {
+                set.add(String.format("%s --| %s", c1, c2));
+            }
+        }
+        return set.toString();
+    }
 }

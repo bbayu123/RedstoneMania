@@ -5,8 +5,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 
-import com.bergerkiller.bukkit.rm.element.Port;
 import com.bergerkiller.bukkit.rm.element.Component;
+import com.bergerkiller.bukkit.rm.element.Port;
 
 public class CircuitInstance extends CircuitBase {
     public Circuit source;
@@ -18,54 +18,59 @@ public class CircuitInstance extends CircuitBase {
     }
 
     public boolean updateAlive() {
-        for (Port p : getPorts()) {
+        for (Port p : this.getPorts()) {
             if (p.locations.size() > 0) {
                 return false;
             }
         }
         // no physical ports - dead
-        source.removeInstance(name);
+        this.source.removeInstance(this.name);
         return true;
     }
 
     public void update() {
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             r.update();
             r.onPowerChange();
         }
-        for (CircuitInstance ci : subcircuits) {
+        for (CircuitInstance ci : this.subcircuits) {
             ci.update();
         }
     }
 
     @Override
     public File getFile() {
-        return new File(source.getInstanceFolder() + File.separator + name + ".instance");
+        return new File(this.source.getInstanceFolder() + File.separator + this.name + ".instance");
     }
 
     @Override
     public String getFullName() {
-        return source.name + "." + name;
+        return this.source.name + "." + this.name;
     }
 
     @Override
     public void load(DataInputStream dis) throws IOException {
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             r.loadInstance(dis);
         }
-        for (CircuitInstance c : subcircuits) {
+        for (CircuitInstance c : this.subcircuits) {
             c.load(dis);
         }
-        initialize();
+        this.initialize();
     }
 
     @Override
     public void save(DataOutputStream dos) throws IOException {
-        for (Component r : elements) {
+        for (Component r : this.elements) {
             r.saveInstance(dos);
         }
-        for (CircuitInstance c : subcircuits) {
+        for (CircuitInstance c : this.subcircuits) {
             c.save(dos);
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("CircuitInstance [isMain=%s] : %s", isMain, super.toString());
     }
 }

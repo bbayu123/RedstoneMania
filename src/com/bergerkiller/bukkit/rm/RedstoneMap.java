@@ -18,40 +18,40 @@ public class RedstoneMap {
     private HashMap<Component, HashSet<RedstoneContainer>> maps = new HashMap<>();
 
     public RedstoneContainer get(Block block) {
-        return get(new BlockLocation(block));
+        return this.get(new BlockLocation(block));
     }
 
     public RedstoneContainer get(World world, int x, int y, int z) {
-        return get(new BlockLocation(world, x, y, z));
+        return this.get(new BlockLocation(world, x, y, z));
     }
 
     public RedstoneContainer get(BlockLocation block) {
-        RedstoneContainer m = blocks.get(block);
+        RedstoneContainer m = this.blocks.get(block);
         if (m == null) {
             m = new RedstoneContainer(this);
-            blocks.put(block, m);
+            this.blocks.put(block, m);
         }
         return m;
     }
 
     public HashSet<RedstoneContainer> getMaps(Component redstone) {
-        HashSet<RedstoneContainer> map = maps.get(redstone);
+        HashSet<RedstoneContainer> map = this.maps.get(redstone);
         if (map == null) {
             map = new HashSet<>();
-            maps.put(redstone, map);
+            this.maps.put(redstone, map);
         }
         return map;
     }
 
     public void merge(Component from, Component to) {
-        HashSet<RedstoneContainer> rmaps = getMaps(from);
+        HashSet<RedstoneContainer> rmaps = this.getMaps(from);
         for (RedstoneContainer map : rmaps) {
-            setValue(map, to);
+            this.setValue(map, to);
         }
-        maps.remove(from);
+        this.maps.remove(from);
     }
 
     protected void setValue(RedstoneContainer map, Component value) {
-        getMaps(value).add(map);
+        this.getMaps(value).add(map);
     }
 }

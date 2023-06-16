@@ -14,4 +14,9 @@ public class Repeater extends Component {
     public byte getType() {
         return 2;
     }
+
+    @Override
+    protected boolean determinePower(boolean mainPowered, boolean sidePowered) {
+        return sidePowered ? powered : mainPowered;
+    }
 }
