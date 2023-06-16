@@ -1,6 +1,14 @@
 package com.bergerkiller.bukkit.rm.element;
 
-public class Inverter extends Redstone {
+/**
+ * A redstone inverter
+ * <p>
+ * An inverter is of type 1
+ * 
+ * @author bergerkiller
+ *
+ */
+public class Inverter extends Component {
 
     @Override
     public boolean hasPower() {

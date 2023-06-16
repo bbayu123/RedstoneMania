@@ -9,7 +9,7 @@ import org.bukkit.block.Block;
 
 import com.bergerkiller.bukkit.common.BlockLocation;
 
-public class Port extends Redstone {
+public class Port extends Component {
 
     public static Port get(Block at) {
         PhysicalPort pp = PhysicalPort.get(at);

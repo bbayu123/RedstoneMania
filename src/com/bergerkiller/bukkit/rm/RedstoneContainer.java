@@ -1,9 +1,9 @@
 package com.bergerkiller.bukkit.rm;
 
-import com.bergerkiller.bukkit.rm.element.Redstone;
+import com.bergerkiller.bukkit.rm.element.Component;
 
 public class RedstoneContainer {
-    public Redstone value;
+    public Component value;
     private RedstoneMap map;
 
     public RedstoneContainer(RedstoneMap map) {
@@ -16,7 +16,7 @@ public class RedstoneContainer {
      * @param value to set to
      * @return The input Value
      */
-    public <T extends Redstone> T setValue(T value) {
+    public <T extends Component> T setValue(T value) {
         this.value = value;
         map.setValue(this, value);
         return value;

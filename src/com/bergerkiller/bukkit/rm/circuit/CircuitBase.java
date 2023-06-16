@@ -10,12 +10,12 @@ import java.util.HashMap;
 
 import com.bergerkiller.bukkit.common.config.DataReader;
 import com.bergerkiller.bukkit.common.config.DataWriter;
+import com.bergerkiller.bukkit.rm.element.Component;
 import com.bergerkiller.bukkit.rm.element.Port;
-import com.bergerkiller.bukkit.rm.element.Redstone;
 
 public abstract class CircuitBase {
     public String name;
-    public Redstone[] elements;
+    public Component[] elements;
     public CircuitInstance[] subcircuits;
     private HashMap<String, Port> ports = new HashMap<>();
     private boolean initialized = false;
@@ -26,7 +26,7 @@ public abstract class CircuitBase {
      * Ticks all the elements in this Circuit
      */
     public void onTick() {
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.onTick();
         }
         for (CircuitInstance ci : subcircuits) {
@@ -40,7 +40,7 @@ public abstract class CircuitBase {
 
     private void initialize(boolean generateIds) {
         ports.clear();
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.setCircuit(this);
             if (r instanceof Port) {
                 ports.put(((Port) r).name, (Port) r);
@@ -76,8 +76,8 @@ public abstract class CircuitBase {
         boolean hasDirectConnections = true;
         while (hasDirectConnections) {
             hasDirectConnections = false;
-            for (Redstone r : elements) {
-                Redstone direct = r.findDirectConnection();
+            for (Component r : elements) {
+                Component direct = r.findDirectConnection();
                 if (direct == null) continue;
                 hasDirectConnections = true;
                 changed = true;
@@ -116,10 +116,10 @@ public abstract class CircuitBase {
         }
     }
 
-    public Redstone getElement(int id) {
+    public Component getElement(int id) {
         if (id >= elements.length) {
             for (CircuitBase sub : subcircuits) {
-                for (Redstone r : sub.elements) {
+                for (Component r : sub.elements) {
                     if (r.getId() == id) return r;
                 }
             }
@@ -129,11 +129,11 @@ public abstract class CircuitBase {
         }
     }
 
-    public Redstone getElement(Redstone guide) {
+    public Component getElement(Component guide) {
         return this.getElement(guide.getId());
     }
 
-    public void removeElement(Redstone element) {
+    public void removeElement(Component element) {
         for (int i = 0; i < elements.length; i++) {
             if (elements[i] == element) {
                 this.removeElement(i);
@@ -143,7 +143,7 @@ public abstract class CircuitBase {
     }
 
     private void removeElement(int index) {
-        Redstone[] newElements = new Redstone[elements.length - 1];
+        Component[] newElements = new Component[elements.length - 1];
         for (int i = 0; i < index; i++) {
             newElements[i] = elements[i];
         }
@@ -159,28 +159,26 @@ public abstract class CircuitBase {
      * 
      * @return
      */
-    public Redstone[] getIndependentElements() {
+    public Component[] getIndependentElements() {
         return this.getIndependentElements(true);
     }
 
-    private Redstone[] getIndependentElements(boolean main) {
-        ArrayList<Redstone> elements = new ArrayList<>();
-        for (Redstone r : this.elements) {
+    private Component[] getIndependentElements(boolean main) {
+        ArrayList<Component> elements = new ArrayList<>();
+        for (Component r : this.elements) {
             if (r != null && !r.isDisabled()) {
                 if (!main && r instanceof Port) {
-                    Redstone old = r;
-                    r = new Redstone();
-                    r.setData(old);
+                    r = r.clone();
                 }
                 elements.add(r);
             }
         }
         for (CircuitBase cb : subcircuits) {
-            for (Redstone r : cb.getIndependentElements()) {
+            for (Component r : cb.getIndependentElements()) {
                 elements.add(r);
             }
         }
-        return elements.toArray(new Redstone[0]);
+        return elements.toArray(new Component[0]);
     }
 
     public Circuit getIndependentCircuit() {
@@ -192,7 +190,7 @@ public abstract class CircuitBase {
     }
 
     private int generateIds(int startindex) {
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.setId(startindex);
             startindex++;
         }

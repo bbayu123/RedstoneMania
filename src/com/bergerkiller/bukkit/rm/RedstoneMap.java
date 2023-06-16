@@ -8,14 +8,14 @@ import org.bukkit.block.Block;
 
 import com.bergerkiller.bukkit.common.BlockLocation;
 import com.bergerkiller.bukkit.common.collections.BlockMap;
-import com.bergerkiller.bukkit.rm.element.Redstone;
+import com.bergerkiller.bukkit.rm.element.Component;
 
 /**
  * Maps Redstone instances to blocks in (possibly) multiple worlds
  */
 public class RedstoneMap {
     private BlockMap<RedstoneContainer> blocks = new BlockMap<>();
-    private HashMap<Redstone, HashSet<RedstoneContainer>> maps = new HashMap<>();
+    private HashMap<Component, HashSet<RedstoneContainer>> maps = new HashMap<>();
 
     public RedstoneContainer get(Block block) {
         return get(new BlockLocation(block));
@@ -34,7 +34,7 @@ public class RedstoneMap {
         return m;
     }
 
-    public HashSet<RedstoneContainer> getMaps(Redstone redstone) {
+    public HashSet<RedstoneContainer> getMaps(Component redstone) {
         HashSet<RedstoneContainer> map = maps.get(redstone);
         if (map == null) {
             map = new HashSet<>();
@@ -43,7 +43,7 @@ public class RedstoneMap {
         return map;
     }
 
-    public void merge(Redstone from, Redstone to) {
+    public void merge(Component from, Component to) {
         HashSet<RedstoneContainer> rmaps = getMaps(from);
         for (RedstoneContainer map : rmaps) {
             setValue(map, to);
@@ -51,7 +51,7 @@ public class RedstoneMap {
         maps.remove(from);
     }
 
-    protected void setValue(RedstoneContainer map, Redstone value) {
+    protected void setValue(RedstoneContainer map, Component value) {
         getMaps(value).add(map);
     }
 }

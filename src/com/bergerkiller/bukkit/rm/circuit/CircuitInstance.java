@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.bergerkiller.bukkit.rm.element.Port;
-import com.bergerkiller.bukkit.rm.element.Redstone;
+import com.bergerkiller.bukkit.rm.element.Component;
 
 public class CircuitInstance extends CircuitBase {
     public Circuit source;
@@ -29,7 +29,7 @@ public class CircuitInstance extends CircuitBase {
     }
 
     public void update() {
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.update();
             r.onPowerChange();
         }
@@ -50,7 +50,7 @@ public class CircuitInstance extends CircuitBase {
 
     @Override
     public void load(DataInputStream dis) throws IOException {
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.loadInstance(dis);
         }
         for (CircuitInstance c : subcircuits) {
@@ -61,7 +61,7 @@ public class CircuitInstance extends CircuitBase {
 
     @Override
     public void save(DataOutputStream dos) throws IOException {
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.saveInstance(dos);
         }
         for (CircuitInstance c : subcircuits) {

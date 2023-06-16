@@ -11,7 +11,7 @@ import java.util.logging.Level;
 import com.bergerkiller.bukkit.rm.RedstoneMania;
 import com.bergerkiller.bukkit.rm.element.PhysicalPort;
 import com.bergerkiller.bukkit.rm.element.Port;
-import com.bergerkiller.bukkit.rm.element.Redstone;
+import com.bergerkiller.bukkit.rm.element.Component;
 
 public class Circuit extends CircuitBase {
     private HashMap<String, CircuitInstance> instances = new HashMap<>();
@@ -43,7 +43,7 @@ public class Circuit extends CircuitBase {
             c.subcircuits[i] = subcircuits[i].source.createInstance();
         }
         // Clone the data
-        c.elements = new Redstone[elements.length];
+        c.elements = new Component[elements.length];
         for (int i = 0; i < elements.length; i++) {
             c.elements[i] = elements[i].clone();
         }
@@ -51,14 +51,14 @@ public class Circuit extends CircuitBase {
         c.initialize();
         // Link the elements
         for (int i = 0; i < c.elements.length; i++) {
-            Redstone from = elements[i];
-            Redstone to = c.elements[i];
+            Component from = elements[i];
+            Component to = c.elements[i];
             if (from.getId() != to.getId()) {
                 RedstoneMania.plugin.log(Level.SEVERE, "Failed to make a new instance of '" + name + "': ID out of sync!");
                 return null;
             } else {
-                for (Redstone input : from.inputs) {
-                    Redstone element = c.getElement(input);
+                for (Component input : from.inputs) {
+                    Component element = c.getElement(input);
                     if (element == null) {
                         RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + name + "': input element ID mismatch!");
                         return null;
@@ -66,8 +66,8 @@ public class Circuit extends CircuitBase {
                         element.connectTo(to);
                     }
                 }
-                for (Redstone output : from.outputs) {
-                    Redstone element = c.getElement(output);
+                for (Component output : from.outputs) {
+                    Component element = c.getElement(output);
                     if (element == null) {
                         RedstoneMania.plugin.log(Level.SEVERE, "Failed to create a new instance of '" + name + "': output element ID mismatch!");
                         return null;
@@ -138,16 +138,16 @@ public class Circuit extends CircuitBase {
             }
         }
         // Read the circuit data
-        elements = new Redstone[dis.readShort()];
+        elements = new Component[dis.readShort()];
         for (int i = 0; i < elements.length; i++) {
-            elements[i] = Redstone.loadFrom(dis);
+            elements[i] = Component.loadFrom(dis);
         }
         initialize();
         // Connect elements
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             int inputcount = dis.readShort();
             for (int i = 0; i < inputcount; i++) {
-                Redstone input = this.getElement(dis.readInt());
+                Component input = this.getElement(dis.readInt());
                 if (input == null) {
                     throw new IOException("Redstone element has a missing input!");
                 } else {
@@ -156,7 +156,7 @@ public class Circuit extends CircuitBase {
             }
             int outputcount = dis.readShort();
             for (int i = 0; i < outputcount; i++) {
-                Redstone output = this.getElement(dis.readInt());
+                Component output = this.getElement(dis.readInt());
                 if (output == null) {
                     throw new IOException("Redstone element has a missing output!");
                 } else {
@@ -175,17 +175,17 @@ public class Circuit extends CircuitBase {
         }
         // Write the circuit data
         dos.writeShort(elements.length);
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             r.saveTo(dos);
         }
         // Write connections
-        for (Redstone r : elements) {
+        for (Component r : elements) {
             dos.writeShort(r.inputs.size());
-            for (Redstone input : r.inputs) {
+            for (Component input : r.inputs) {
                 dos.writeInt(input.getId());
             }
             dos.writeShort(r.outputs.size());
-            for (Redstone output : r.outputs) {
+            for (Component output : r.outputs) {
                 dos.writeInt(output.getId());
             }
         }

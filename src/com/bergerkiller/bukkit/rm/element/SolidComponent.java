@@ -14,7 +14,7 @@ import com.bergerkiller.bukkit.rm.Util;
 /**
  * Used during circuit creation to get the input and outputs of a solid block IS NOT USED IN THE ACTUAL CIRCUITS!
  */
-public class SolidComponent extends Redstone {
+public class SolidComponent extends Wire {
     /*
      * inputs: torches, wires and repeaters supplying power to outputs and wires outputs: torches, wires and repeaters
      * receiving input from this solid block
