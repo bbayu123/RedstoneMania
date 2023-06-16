@@ -3,13 +3,14 @@ package com.bergerkiller.bukkit.rm.circuit;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.rm.RedstoneMania;
 import com.bergerkiller.bukkit.rm.element.PhysicalPort;
 
 public class CircuitProvider {
-    private static HashMap<String, Circuit> circuits = new HashMap<>();
+    private static Map<String, Circuit> circuits = new HashMap<>();
 
     /**
      * Gets or loads a Circuit

@@ -13,13 +13,41 @@ import com.bergerkiller.bukkit.common.config.DataWriter;
 import com.bergerkiller.bukkit.rm.element.Component;
 import com.bergerkiller.bukkit.rm.element.Port;
 
+/**
+ * An abstract circuit
+ * 
+ * @author bergerkiller
+ *
+ */
 public abstract class CircuitBase {
+    /**
+     * The name of the circuit
+     */
     public String name;
+    /**
+     * The components of the circuit
+     */
     public Component[] elements;
+    /**
+     * The sub-circuits within this circuit
+     */
     public CircuitInstance[] subcircuits;
+    /**
+     * The ports of the circuit
+     */
     private HashMap<String, Port> ports = new HashMap<>();
+
+    /**
+     * Whether the circuit is initialized or not
+     */
     private boolean initialized = false;
+    /**
+     * Whether the circuit is loaded or not
+     */
     private boolean loaded = false;
+    /**
+     * Whether the circuit is saved or not
+     */
     private boolean saved = false;
 
     /**
@@ -34,10 +62,18 @@ public abstract class CircuitBase {
         }
     }
 
+    /**
+     * Initializes the circuit
+     */
     public void initialize() {
         this.initialize(true);
     }
 
+    /**
+     * Initializes the circuit
+     * 
+     * @param generateIds whether to generate IDs or not
+     */
     private void initialize(boolean generateIds) {
         ports.clear();
         for (Component r : elements) {
@@ -55,22 +91,47 @@ public abstract class CircuitBase {
         initialized = true;
     }
 
+    /**
+     * Gets whether the circuit is initialized
+     * 
+     * @return if the circuit is initialised
+     */
     public boolean isInitialized() {
         return initialized;
     }
 
+    /**
+     * Gets a port given the name of the port
+     * 
+     * @param name the port
+     * @return
+     */
     public Port getPort(String name) {
         return ports.get(name);
     }
 
+    /**
+     * Gets all ports in this circuits
+     * 
+     * @return a collection of ports
+     */
     public Collection<Port> getPorts() {
         return ports.values();
     }
 
+    /**
+     * Fixes direct connections
+     */
     public void fixDirectConnections() {
         this.fixDirectConnections(true);
     }
 
+    /**
+     * Fixes direct connections
+     * 
+     * @param checksub whether to check sub-circuits or not
+     * @return if the circuit has been altered due to the fixing or not
+     */
     private boolean fixDirectConnections(boolean checksub) {
         boolean changed = false;
         boolean hasDirectConnections = true;
@@ -82,25 +143,23 @@ public abstract class CircuitBase {
                 hasDirectConnections = true;
                 changed = true;
                 // remove which: direct or r?
-                if (direct instanceof Port) {
-                    if (r instanceof Port) {
-                        // which port is better?
-                        if (direct.getCircuit() == this) {
-                            // direct is top-level, this one is most important
-                            if (r.getCircuit() == this) {
-                                // r is also top level?! Oh oh! Let's just de-link them for good grace!
-                                r.disconnect(direct);
-                            } else {
-                                r.disable();
-                            }
+                if (!(direct instanceof Port)) {
+                    direct.disable();
+                } else if (!(r instanceof Port)) {
+                    r.disable();
+                } else {
+                    // which port is better?
+                    if (direct.getCircuit() == this) {
+                        // direct is top-level, this one is most important
+                        if (r.getCircuit() == this) {
+                            // r is also top level?! Oh oh! Let's just de-link them for good grace!
+                            r.disconnect(direct);
                         } else {
-                            direct.disable();
+                            r.disable();
                         }
                     } else {
-                        r.disable();
+                        direct.disable();
                     }
-                } else {
-                    direct.disable();
                 }
             }
         }
@@ -116,23 +175,40 @@ public abstract class CircuitBase {
         }
     }
 
+    /**
+     * Gets the element with the specified ID
+     * 
+     * @param id the ID of the element
+     * @return the element
+     */
     public Component getElement(int id) {
-        if (id >= elements.length) {
+        if (id < elements.length) {
+            return elements[id];
+        } else {
             for (CircuitBase sub : subcircuits) {
                 for (Component r : sub.elements) {
                     if (r.getId() == id) return r;
                 }
             }
             return null;
-        } else {
-            return elements[id];
         }
     }
 
+    /**
+     * Gets the element that matches the provide component
+     * 
+     * @param guide the component to match
+     * @return the element
+     */
     public Component getElement(Component guide) {
         return this.getElement(guide.getId());
     }
 
+    /**
+     * Removes an element matching the provide component
+     * 
+     * @param element the component to be removed
+     */
     public void removeElement(Component element) {
         for (int i = 0; i < elements.length; i++) {
             if (elements[i] == element) {
@@ -142,6 +218,11 @@ public abstract class CircuitBase {
         }
     }
 
+    /**
+     * Removes an element at an index
+     * 
+     * @param index the index to remove
+     */
     private void removeElement(int index) {
         Component[] newElements = new Component[elements.length - 1];
         for (int i = 0; i < index; i++) {
@@ -154,10 +235,11 @@ public abstract class CircuitBase {
     }
 
     /**
-     * Generates a list of elements which do not require another circuit to exist Removes all dependencies and internal
-     * ports at the cost of a large schematic
+     * Generates a list of elements which do not require another circuit to exist
+     * <p>
+     * Removes all dependencies and internal ports at the cost of a large schematic
      * 
-     * @return
+     * @return the list of elements
      */
     public Component[] getIndependentElements() {
         return this.getIndependentElements(true);
@@ -200,10 +282,7 @@ public abstract class CircuitBase {
         return startindex;
     }
 
-    public File getFile() {
-        // to be overridden
-        return null;
-    }
+    public abstract File getFile();
 
     public String getFullName() {
         return name;

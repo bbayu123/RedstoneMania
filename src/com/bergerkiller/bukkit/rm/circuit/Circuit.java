@@ -9,10 +9,16 @@ import java.util.HashMap;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.rm.RedstoneMania;
+import com.bergerkiller.bukkit.rm.element.Component;
 import com.bergerkiller.bukkit.rm.element.PhysicalPort;
 import com.bergerkiller.bukkit.rm.element.Port;
-import com.bergerkiller.bukkit.rm.element.Component;
 
+/**
+ * A redstone circuit
+ * 
+ * @author bergerkiller
+ *
+ */
 public class Circuit extends CircuitBase {
     private HashMap<String, CircuitInstance> instances = new HashMap<>();
 

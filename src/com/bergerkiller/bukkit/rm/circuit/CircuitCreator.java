@@ -128,80 +128,82 @@ public class CircuitCreator {
     private RedstoneContainer create(Block block) {
         Material type = block.getType();
         RedstoneContainer m = map.get(block);
-        if (m.value == null) {
-            if (MaterialUtil.ISREDSTONETORCH.get(type)) {
-                // Creates an inverter
-                m.setValue(new Inverter()).setPosition(block);
-                m.value.setPowered(((Lightable) block.getBlockData()).isLit());
-                m.value.setDelay(getDelay(block, type));
-                items.add(m.value);
-                createInverter((Inverter) m.value, block, type);
-            } else if (MaterialUtil.ISDIODE.get(type)) {
-                // Creates a repeater
-                m.setValue(new Repeater()).setPosition(block);
-                m.value.setPowered(((Powerable) block.getBlockData()).isPowered());
-                m.value.setDelay(getDelay(block, type));
-                items.add(m.value);
-                createRepeater((Repeater) m.value, block, type);
-            } else if (type == Material.REDSTONE_WIRE) {
-                // Creates a wire
-                m.setValue(new Wire()).setPosition(block);
-                m.value.setPowered(((AnaloguePowerable) block.getBlockData()).getPower() > 0);
-                items.add(m.value);
-                createComponent(m.value, block, type);
-            } else if (type == Material.LEVER) {
-                // Creates a port
-                Port searchport = Port.get(block);
-                if (searchport != null) {
-                    CircuitBase base = searchport.getCircuit();
-                    if (base == null) {
-                        RedstoneMania.plugin.log(Level.SEVERE, "[Creation] Failed to obtain circuit from port '" + searchport.name + "'!");
+        if (m.value != null) {
+            return m;
+        }
+
+        if (MaterialUtil.ISREDSTONETORCH.get(type)) {
+            // Creates an inverter
+            m.setValue(new Inverter()).setPosition(block);
+            m.value.setPowered(((Lightable) block.getBlockData()).isLit());
+            m.value.setDelay(getDelay(block, type));
+            items.add(m.value);
+            createInverter((Inverter) m.value, block, type);
+        } else if (MaterialUtil.ISDIODE.get(type)) {
+            // Creates a repeater
+            m.setValue(new Repeater()).setPosition(block);
+            m.value.setPowered(((Powerable) block.getBlockData()).isPowered());
+            m.value.setDelay(getDelay(block, type));
+            items.add(m.value);
+            createRepeater((Repeater) m.value, block, type);
+        } else if (type == Material.REDSTONE_WIRE) {
+            // Creates a wire
+            m.setValue(new Wire()).setPosition(block);
+            m.value.setPowered(((AnaloguePowerable) block.getBlockData()).getPower() > 0);
+            items.add(m.value);
+            createComponent(m.value, block, type);
+        } else if (type == Material.LEVER) {
+            // Creates a port
+            Port searchport = Port.get(block);
+            if (searchport != null) {
+                CircuitBase base = searchport.getCircuit();
+                if (base == null) {
+                    RedstoneMania.plugin.log(Level.SEVERE, "[Creation] Failed to obtain circuit from port '" + searchport.name + "'!");
+                } else {
+                    // Create a new circuit instance
+                    CircuitInstance cb = (CircuitInstance) base;
+                    String fullname = cb.getFullName();
+                    CircuitInstance ci = subcircuits.get(fullname);
+                    if (ci == null) {
+                        ci = cb.source.createInstance();
+                        subcircuits.put(fullname, ci);
+                    }
+                    if (ci == null) {
+                        RedstoneMania.plugin.log(Level.SEVERE, "[Creation] Failed to convert circuit '" + base.getFullName() + "'!");
                     } else {
-                        // Create a new circuit instance
-                        CircuitInstance cb = (CircuitInstance) base;
-                        String fullname = cb.getFullName();
-                        CircuitInstance ci = subcircuits.get(fullname);
-                        if (ci == null) {
-                            ci = cb.source.createInstance();
-                            subcircuits.put(fullname, ci);
-                        }
-                        if (ci == null) {
-                            RedstoneMania.plugin.log(Level.SEVERE, "[Creation] Failed to convert circuit '" + base.getFullName() + "'!");
-                        } else {
-                            // get the ports of the found circuit
-                            Collection<Port> realports = base.getPorts();
-                            for (Port realport : realports) {
-                                Port port = ci.getPort(realport.name);
-                                if (port == null) {
-                                    RedstoneMania.plugin.log(Level.WARNING, "[Creation] Failed to find port '" + realport.name + "' in circuit '" + ci.getFullName() + "'!");
-                                } else {
-                                    port.setPowered(realport.isPowered());
-                                    boolean outofreach = false;
-                                    for (PhysicalPort pp : realport.locations) {
-                                        Block at = pp.position.getBlock();
-                                        if (at == null) {
-                                            outofreach = true;
-                                        } else {
-                                            for (BlockFace leverface : FaceUtil.ATTACHEDFACES) {
-                                                Block lever = at.getRelative(leverface);
-                                                if (lever.getType() == Material.LEVER) {
-                                                    map.get(lever).setValue(port).setPosition(lever.getX(), lever.getZ());
-                                                    createPort(port, lever, Material.LEVER);
-                                                }
+                        // get the ports of the found circuit
+                        Collection<Port> realports = base.getPorts();
+                        for (Port realport : realports) {
+                            Port port = ci.getPort(realport.name);
+                            if (port == null) {
+                                RedstoneMania.plugin.log(Level.WARNING, "[Creation] Failed to find port '" + realport.name + "' in circuit '" + ci.getFullName() + "'!");
+                            } else {
+                                port.setPowered(realport.isPowered());
+                                boolean outofreach = false;
+                                for (PhysicalPort pp : realport.locations) {
+                                    Block at = pp.position.getBlock();
+                                    if (at == null) {
+                                        outofreach = true;
+                                    } else {
+                                        for (BlockFace leverface : FaceUtil.ATTACHEDFACES) {
+                                            Block lever = at.getRelative(leverface);
+                                            if (lever.getType() == Material.LEVER) {
+                                                map.get(lever).setValue(port).setPosition(lever.getX(), lever.getZ());
+                                                createPort(port, lever, Material.LEVER);
                                             }
                                         }
                                     }
-                                    if (outofreach) {
-                                        msg("One or more ports of '" + ci.getFullName() + "' are out of reach!");
-                                    }
+                                }
+                                if (outofreach) {
+                                    msg("One or more ports of '" + ci.getFullName() + "' are out of reach!");
                                 }
                             }
                         }
                     }
                 }
-            } else if (Util.ISSOLID.get(type)) {
-                createSolid(m.setValue(new SolidComponent(block)), block, type);
             }
+        } else if (Util.ISSOLID.get(type)) {
+            createSolid(m.setValue(new SolidComponent(block)), block, type);
         }
         return m;
     }
